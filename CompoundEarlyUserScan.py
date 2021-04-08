@@ -72,8 +72,7 @@ for cToken in cTokens:
 # ----> one repay to cSAI, 10048941
 # ----> one supply to cZRX, 7778085
 # ----> one withdraw from cBAT, 7757440
-for iblock in range(7842233,7842234):
-#for iblock in range(cZRXdeployBlock,COMPdeployBlock):
+for iblock in range(cZRXdeployBlock,COMPdeployBlock):
     block = w3.eth.get_block(iblock)
     print('--- Block ' + str(iblock) + ' ---')
 
