@@ -1,6 +1,5 @@
 import web3
 import json
-from hexbytes import HexBytes
 
 detailedPrint = False
 base = 1.e18
