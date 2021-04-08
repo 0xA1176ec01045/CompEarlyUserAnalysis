@@ -54,7 +54,7 @@ cZRXdeployBlock = cZRX["deployBlock"]
 COMPdeployBlock = 9601359
 
 # Get a web3 object pulling data from Infura Ethereum Mainnet RPC
-# --> User must provide a valid Infura Project ID or replace with a local ethereum RPC 
+# --> User must provide a valid Infura Project ID or replace with a local ethereum IPC 
 w3 = web3.Web3(web3.Web3.HTTPProvider('https://mainnet.infura.io/v3/YOUR-PROJECT-ID'))
 
 # Open ABIs for each cToken contract
