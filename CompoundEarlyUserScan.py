@@ -58,7 +58,6 @@ COMPdeployBlock = 9601359
 w3 = web3.Web3(web3.Web3.HTTPProvider('https://mainnet.infura.io/v3/YOUR-PROJECT-ID'))
 
 # Open ABIs for each cToken contract
-CTokenContracts = []
 for cToken in cTokens:
     with open(cToken["abi"]) as json_file:
         cTokenABI = json.load(json_file)
