@@ -1,7 +1,6 @@
 import web3
 import json
 
-base = 1.e18		# number of decimals for token balances
 batchSize = 100000      # size of each batch of blocks;
                         # we use this to sidestep limit on
                         # number of events returned by getLogs()
@@ -17,23 +16,28 @@ CompV1 = {
 }
 ZRX = {
   "address"     : '0xE41d2489571d322189246DaFA5ebDe1F4699F498',
-   "label"      : 'ZRX'
+  "label"       : 'ZRX',
+  "decimals"    : 18
 }
 BAT = {
   "address"     : '0x0D8775F648430679A709E98d2b0Cb6250d2887EF',
-  "label"       : 'BAT'
+  "label"       : 'BAT',
+  "decimals"     : 18
 }
 REP = {
   "address"     : '0x1985365e9f78359a9B6AD760e32412f4a445E862',
-  "label"       : 'REP'
+  "label"       : 'REP',
+  "decimals"    : 18
 }
 WETH = {
   "address"     : '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-  "label"       : 'WETH'
+  "label"       : 'WETH',
+  "decimals"    : 18
 }
 SAI = {
   "address"     : '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359',
-  "label"       : 'SAI'
+  "label"       : 'SAI',
+  "decimals"    : 18
 }
 V1Tokens = [ZRX,BAT,REP,WETH,SAI]
 
@@ -57,17 +61,17 @@ cSAI = {
 cREP = {
   "address"     : '0x158079Ee67Fce2f58472A96584A73C7Ab9AC95c1',
   "deployBlock" : 7710755,
-  "abi"         : 'cREP.abi.json'
+  "abi"         : 'cREP.abi.json',
 }
 cETH = {
   "address"     : '0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5',
   "deployBlock" : 7710758,
-  "abi"         : 'cETH.abi.json'
+  "abi"         : 'cETH.abi.json',
 }
 cUSDC = {
   "address"     : '0x39AA39c021dfbaE8faC545936693aC917d5E7563',
   "deployBlock" : 7710760,
-  "abi"         : 'cUSDC.abi.json'
+  "abi"         : 'cUSDC.abi.json',
 }
 cWBTC = {
   "address"     : '0xC11b1268C1A384e55C48c2391d8d480264A3A7F4',
@@ -79,15 +83,36 @@ cDAI = {
   "deployBlock" : 8983575,
   "abi"         : 'cDAI.abi.json'
 }
-
 cTokens = [cZRX,cBAT,cSAI,cREP,cETH,cUSDC,cWBTC,cDAI]
+
+# Finally we also need decimals of the underlying tokens that weren't in V1
+USDC = {
+  "address"     : '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+  "decimals"    : 6
+}
+WBTC = {
+  "address"     : '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+  "decimals"    : 8
+}
+DAI = {
+  "address"     : '0x6b175474e89094c44da98b954eedeac495271d0f',
+  "decimals"    : 18
+}
+ETH = {
+  "decimals"    : 18
+}
+
 actions = ["supply","withdraw","borrow","repay","liquidate"]
 
 # No need to review blocks prior to first cToken deployment (cZRX);
-# No need to review blocks after deployment of COMP token
-CompV1deployBlock = CompV1["deployBlock"]
-cZRXdeployBlock   = cZRX["deployBlock"]
-COMPdeployBlock   = 9601359
+# No need to review blocks after one week prior to COMP launch:
+# Last block produced on June 8, 2020 is 10228172
+# --> Note that deployment of COMP token contract preceeds
+#     official launch of COMP rewards by several months
+CompV1deployBlock      = CompV1["deployBlock"]
+cZRXdeployBlock        = cZRX["deployBlock"]
+COMPdeployBlock        = 9601359
+EarlyUserCutoffBlock   = 10228172
 
 # Get a web3 object pulling data from Infura Ethereum Mainnet RPC
 # --> User must provide a valid Infura Project ID or replace with a local ethereum IPC 
@@ -100,12 +125,12 @@ with open(CompV1["abi"]) as json_file:
     MoneyMarketABI = CompoundV1ABI["MoneyMarket"]
 outfile = open(CompoundV1Outfile,'w')
 
-for batch in range(CompV1deployBlock,COMPdeployBlock,batchSize):
+CompV1["contract"] = w3.eth.contract(CompV1["address"],abi=MoneyMarketABI)
+for batch in range(CompV1deployBlock,EarlyUserCutoffBlock,batchSize):
     startBlock = batch
     endBlock = batch+batchSize-1
-    if endBlock > COMPdeployBlock:
-        endBlock = COMPdeployBlock
-    CompV1["contract"] = w3.eth.contract(CompV1["address"],abi=MoneyMarketABI)
+    if endBlock > EarlyUserCutoffBlock:
+        endBlock = EarlyUserCutoffBlock
     CompV1["supply"]    = CompV1["contract"].events.SupplyReceived.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
     CompV1["withdraw"]  = CompV1["contract"].events.SupplyWithdrawn.getLogs(
@@ -124,27 +149,31 @@ for batch in range(CompV1deployBlock,COMPdeployBlock,batchSize):
         if action == "liquidate":
             for event in CompV1[action]:
                 block = str(event['blockNumber'])
+                txhash = str(event['transactionHash'].hex())
                 address = str(event['args']['liquidator'])
                 asset = str(event['args']['assetBorrow'])
                 thisToken = 'UNK' # default label if token label not found
                 for token in V1Tokens:
                     if asset == token["address"]:
                         thisToken = token["label"]
+                        base = pow(10.,token["decimals"])
                 amount = str(round(event['args']['amountRepaid']/base,6))
-                data = [block, address, action, amount, thisToken]
-                outfile.write(','.join(data[i] for i in range(5))+'\n')
+                data = [block, txhash, address, action, amount, thisToken]
+                outfile.write(','.join(data[i] for i in range(6))+'\n')
         else:
             for event in CompV1[action]:
                 block = str(event['blockNumber'])
+                txhash = str(event['transactionHash'].hex())
                 address = str(event['args']['account'])
                 asset = str(event['args']['asset'])
                 thisToken = 'UNK' # default label if token label not found
                 for token in V1Tokens:
                     if asset == token["address"]:
                         thisToken = token["label"]
+                        base = pow(10.,token["decimals"])
                 amount = str(round(event['args']['amount']/base,6))
-                data = [block, address, action, amount, thisToken]
-                outfile.write(','.join(data[i] for i in range(5))+'\n')
+                data = [block, txhash, address, action, amount, thisToken]
+                outfile.write(','.join(data[i] for i in range(6))+'\n')
 outfile.close()
 
 # Gather Compound V2 Early User Interactions
@@ -156,11 +185,11 @@ for cToken in cTokens:
     with open(cToken["abi"]) as json_file:
         cTokenABI = json.load(json_file)
     cToken["contract"] = w3.eth.contract(cToken["address"],abi=cTokenABI)
-    for batch in range(cZRXdeployBlock,COMPdeployBlock,batchSize):
+    for batch in range(cZRXdeployBlock,EarlyUserCutoffBlock,batchSize):
         startBlock = batch
         endBlock = batch+batchSize-1
-        if endBlock > COMPdeployBlock:
-            endBlock = COMPdeployBlock
+        if endBlock > EarlyUserCutoffBlock:
+            endBlock = EarlyUserCutoffBlock
         cToken["supply"]    = cToken["contract"].events.Mint.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
         cToken["withdraw"]  = cToken["contract"].events.Redeem.getLogs(
@@ -174,7 +203,17 @@ for cToken in cTokens:
         for action in actions:
             for event in cToken[action]:
                 block = str(event['blockNumber'])
+                txhash = str(event['transactionHash'].hex())
                 thisToken = underlying
+                # Brute-forcing the determination of correct decimals
+                # because the cleaner route used for V1 doesn't work here
+                if thisToken == 'USDC':
+                    decimals = 6
+                elif thisToken == 'WBTC':
+                    decimals = 8
+                else:
+                    decimals = 18
+                base = pow(10.,decimals)
                 if action == 'supply':
                     address = str(event['args']['minter'])
                     amount = str(round(event["args"]["mintAmount"]/base,6))
@@ -190,8 +229,8 @@ for cToken in cTokens:
                 elif action == 'liquidate':
                     address = str(event['args']['liquidator'])
                     amount = str(round(event["args"]["repayAmount"]/base,6))
-                data = [block, address, action, amount, thisToken]
-                outfile.write(','.join(data[i] for i in range(5))+'\n')
+                data = [block, txhash, address, action, amount, thisToken]
+                outfile.write(','.join(data[i] for i in range(6))+'\n')
 outfile.close()
 
 
