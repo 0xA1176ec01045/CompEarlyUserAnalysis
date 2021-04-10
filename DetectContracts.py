@@ -10,8 +10,7 @@ def isContract(address):
     else:
         return True
 
-#earlyUserFile = 'Compound.EarlyUsers.csv'
-earlyUserFile = 'test2.csv'
+earlyUserFile = 'Compound.EarlyUsers.csv'
 txData = pd.read_csv(earlyUserFile)
 
 # Determine whether address type is either:
