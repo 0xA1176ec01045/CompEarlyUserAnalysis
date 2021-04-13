@@ -31,8 +31,8 @@ from sys import argv
 pctSocial  = int(argv[1])
 pctCapital = 100-pctSocial
 
-earlyUserFile = 'Compound.EarlyUsers.Direct.csv'
-proposalFile = 'Proposal.'+str(pctSocial)+'-'+str(pctCapital)+'.csv'
+earlyUserFile = 'Compound.EarlyUsers.Direct.clean.csv'
+proposalFile = 'Proposal.'+str(pctSocial)+'-'+str(pctCapital)+'.tvl.csv'
 txData = pd.read_csv(earlyUserFile)
 
 # Exclude all dust protocol interactions,
@@ -67,6 +67,21 @@ cap_weights = { 'ZRX' : 0.506366856012202,
                'DAI' : 1.0
 }
 # ...compute contribution to capital*time multiplier by tx
+#    * Time multiplier 't' gives greater weight to earlier
+#      interactions with the protocol
+#    * Time multiplier grows linearly from 1 to tvl_factor=85,
+#      which is the estimated multiple by which the protocol's
+#      TVL grew during the eligibility window
+# t = 1 + tvl_factor(earliest_interaction_block - EarlyUserCutoffBlock)/
+#                   (CompV1deployBlock - EarlyUserCutoffBlock)
+#    * In case of multiple interactions by a single address,
+#      we use the earliest interaction to compute the multiplier
+#    * Capital multiplier 'cap' is the estimated USD value of
+#      the supply/borrow action.
+# cap = amount*cap_weight
+#    * cap_weight is the simple two-point average of the token
+#      price in USD at CompV1deployBlock and at COMPlaunchBlock
+#    * See SimpleCapitalWeights.py for implementation details
 captime = []
 for index, row in addressData.iterrows():
     if row['action'] == 'supply' or row['action'] == 'borrow':
@@ -74,7 +89,8 @@ for index, row in addressData.iterrows():
     else:
         cap = 0.0
     interaction_block = row['block']
-    t = 1.0 + (CompV1deployBlock - interaction_block
+    tvl_factor = 85
+    t = 1.0 + tvl_factor*(interaction_block - EarlyUserCutoffBlock
             )/(CompV1deployBlock - EarlyUserCutoffBlock)
     ct = cap*t
     captime.append(ct)
@@ -97,15 +113,36 @@ SybilFunder1   = '0xB67e217f9B39427bf2d6B3DC1aA9C03b24EAb95A'
 SybilFunder2   = '0x63F4Df4b50417482e8BED4A8975249d620e7332a' # funded SybilFunder1
 SybilFunder3   = '0xbac13cED7ED12E24d34ea253611214264dB1f7d3' # funded SybilFunder1
 SybilFunder4   = '0x944F03520b0ECEA3375a4e8377FD998270811bB5' # funded SybilFunder1
-SybilReceiver1 = '0xa9B6d40E0eE772Ea506B41eF7458283a27464eEe'
-SybilReceiver2 = '0xf0C42858E7CF6264c132BE7090D9D0c137c5016b'
+SybilReceiver1 = '0xa9B6d40E0eE772Ea506B41eF7458283a27464eEe' # funded by SybilFunder1
+SybilReceiver2 = '0xf0C42858E7CF6264c132BE7090D9D0c137c5016b' # funded by SybilFunder1
+# Exclude addresses funded by SybilFunder 1 for the Sybil attack that were missed
+# by my 5-tx filter due to the attacker reusing these addresses for other activity
+SybilReceiver3 = '0x4D21dc68132166c4ceE2C495BC76cc8926568fEE' # 5-tx filter missed
+SybilReceiver4 = '0x61F38ed0eeaB67349099DD7bD95fE847F7F6e59c' # 5-tx filter missed
+SybilReceiver5 = '0x192Bc5a28b5256f40B2Da0964dAcba3C5Aa7feF1' # 5-tx filter missed
+SybilReceiver6 = '0x05987e113C74b4B1F82fd6254A2E1E7E99042D89' # 5-tx filter missed
+SybilReceiver7 = '0xEe4B3CC342390484dCC2f3F65Caa971c91f82982' # 5-tx filter missed
+SybilReceiver8 = '0x63F4Df4b50417482e8BED4A8975249d620e7332a' # 5-tx filter missed
+SybilReceiver9 = '0xbac13cED7ED12E24d34ea253611214264dB1f7d3' # 5-tx filter missed
+SybilReceiver10 ='0x944F03520b0ECEA3375a4e8377FD998270811bB5' # 5-tx filter missed
+SybilReceiver11 ='0x1836d38784A7a8b7D62278d8AE59a13c2B3bED4A' # 5-tx filter missed
+SybilReceiver12 ='0xEEB87F7418Df5d62D77905370cee3eC3500952f5' # 5-tx filter missed
 uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilFunder1]
 uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilFunder2]
 uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilFunder3]
 uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilFunder4]
 uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver1]
 uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver2]
-
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver3]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver4]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver5]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver6]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver7]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver8]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver9]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver10]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver11]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver12]
 
 # Translate multipliers into proposed COMP distribution
 # --> Based on forum discussion of 5% distribution to early users
