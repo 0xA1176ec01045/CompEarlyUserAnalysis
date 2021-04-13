@@ -147,7 +147,7 @@ uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver12]
 # Translate multipliers into proposed COMP distribution
 # --> Based on forum discussion of 5% distribution to early users
 # --> 5% of 10M tokens = 500000 COMP to be distributed
-# --> Half of distribution is socialized, half is capital-time weighted
+# --> pctSocial of distribution is socialized, pctCapital is capital-time weighted
 # --> Proposed formula for distribution to user i 
 #     COMP_i = pctSocial*socialCOMP_i + pctCapital*capitalWeightedCOMP_i
 #     : socialCOMP_i = (Total)/(number of eligible addresses)
