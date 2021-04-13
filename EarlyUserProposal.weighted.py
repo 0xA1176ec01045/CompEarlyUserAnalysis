@@ -92,6 +92,21 @@ print(uniqueAddresses)
 CompDeployer = '0xA7ff0d561cd15eD525e31bbe0aF3fE34ac2059F6' 
 uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != CompDeployer]
 
+# Exclude addresses that funded or received funds from Sybil attack addresses:
+SybilFunder1   = '0xB67e217f9B39427bf2d6B3DC1aA9C03b24EAb95A'
+SybilFunder2   = '0x63F4Df4b50417482e8BED4A8975249d620e7332a' # funded SybilFunder1
+SybilFunder3   = '0xbac13cED7ED12E24d34ea253611214264dB1f7d3' # funded SybilFunder1
+SybilFunder4   = '0x944F03520b0ECEA3375a4e8377FD998270811bB5' # funded SybilFunder1
+SybilReceiver1 = '0xa9B6d40E0eE772Ea506B41eF7458283a27464eEe'
+SybilReceiver2 = '0xf0C42858E7CF6264c132BE7090D9D0c137c5016b'
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilFunder1]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilFunder2]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilFunder3]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilFunder4]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver1]
+uniqueAddresses = uniqueAddresses[uniqueAddresses['address'] != SybilReceiver2]
+
+
 # Translate multipliers into proposed COMP distribution
 # --> Based on forum discussion of 5% distribution to early users
 # --> 5% of 10M tokens = 500000 COMP to be distributed
