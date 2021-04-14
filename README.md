@@ -9,9 +9,6 @@ This repository uses the Python web3 module and Compound contract application bi
 
 ## Structure of the distribution
 
-The COMP proposed for a qualifying address (indexed by *i*) is a sum of two terms,
-
-`TotalCOMP_i = w*socialCOMP_i + (1-w)*capitalCOMP_i`
-<img src="https://render.githubusercontent.com/render/math?math=\mathrm{TotalCOMP}_i = w \left(\mathrm{socialCOMP}\right)_i+\left(1-w\right)\left(\mathrm{capitalCOMP}\right)_i">
+A high-level overview of how this tool computes the proposed COMP distribution by early-user address will be posted to the repo soon.
 
 This tool is developed by a small-fry early Compound user who uses Python for scientific computing but is not a professional Solidity or web3 developer. Please be kind, constructive criticism, suggestions, and pull requests are all welcome!
