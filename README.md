@@ -7,10 +7,11 @@ This repository uses the Python web3 module and Compound contract application bi
 * `DetectContracts.py`: identify which of these addresses are contracts and which are external owned accounts (EOAs)
 * `EarlyUserProposal.weighted.py`: generate a proposed distribution of COMP to early users that includes a socialized part and a capital-weighted part
 
-# Structure of the distribution
+## Structure of the distribution
 
 The COMP proposed for a qualifying address (indexed by *i*) is a sum of two terms,
 
+`TotalCOMP_i = w*socialCOMP_i + (1-w)*capitalCOMP_i`
 <img src="https://render.githubusercontent.com/render/math?math=\mathrm{TotalCOMP}_i = w \left(\mathrm{socialCOMP}\right)_i+\left(1-w\right)\left(\mathrm{capitalCOMP}\right)_i">
 
 This tool is developed by a small-fry early Compound user who uses Python for scientific computing but is not a professional Solidity or web3 developer. Please be kind, constructive criticism, suggestions, and pull requests are all welcome!
