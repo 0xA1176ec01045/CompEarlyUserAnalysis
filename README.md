@@ -11,6 +11,6 @@ This repository uses the Python web3 module and Compound contract application bi
 
 The COMP proposed for a qualifying address (indexed by *i*) is a sum of two terms,
 
-<img src="https://render.githubusercontent.com/render/math?math={\mathrm{TotalCOMP}_i = w \mathrm{socialCOMP}_i + \left(1-w\right)\mathrm{capitalCOMP}_i">
+<img src="https://render.githubusercontent.com/render/math?math=\mathrm{TotalCOMP}_i = w \mathrm{socialCOMP}_i + \left(1-w\right)\mathrm{capitalCOMP}_i">
 
 This tool is developed by a small-fry early Compound user who uses Python for scientific computing but is not a professional Solidity or web3 developer. Please be kind, constructive criticism, suggestions, and pull requests are all welcome!
