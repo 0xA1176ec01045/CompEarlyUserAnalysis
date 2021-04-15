@@ -9,6 +9,6 @@ This repository uses the Python web3 module and Compound contract application bi
 
 ## Structure of the distribution
 
-A high-level overview of how this tool computes the proposed COMP distribution by early-user address will be posted to the repo soon.
+A high-level overview of how this tool computes the proposed COMP distribution by early-user address is provided in the file [summary.pdf](https://github.com/0xA1176ec01045/CompEarlyUserAnalysis/blob/main/summary.pdf).
 
 This tool is developed by a small-fry early Compound user who uses Python for scientific computing but is not a professional Solidity or web3 developer. Please be kind, constructive criticism, suggestions, and pull requests are all welcome!
