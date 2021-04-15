@@ -125,7 +125,13 @@ computing the TVL multiplier $m_{i\alpha}$ described above from the block number
 where $b_{\textrm{start}}$ and $b_{\textrm{end}}$ are the beginning and ending blocks of the
 eligibility window, described in section \ref{qualify}, and $k=85$ is chosen so that each TVL
 multiplier $m_{i\alpha}$ satisfies $1 \leq m_{i\alpha} \leq 86$ as described above.
-
+\\\\
+With this information, the capital term for address $i$ is computed by taking the product
+of the capital value $C_{i\alpha}$ and the TVL multiplier $m_{i\alpha}$ for each qualifying
+transaction, summing over all transactions by that address, dividing by the sum of capital
+terms over all qualifying addresses. The result is the fraction of $\textrm{TotalCOMP}$ 
+apportioned to address $i$, so we multiply by $\textrm{TotalCOMP}$ to convert from a unitless
+fraction to a total denominated in COMP.
 \begin{equation*}
   \mathrm{capitalCOMP}_i = \textrm{TotalCOMP}\cdot\left[\frac{\sum\limits_{\textrm{transactions }\alpha}{m_{i\alpha}C_{i\alpha}}}{\sum\limits_{\textrm{users }j}\left({\sum\limits_{\textrm{transactions }\alpha}{m_{j\alpha}C_{j\alpha}}}\right)}\right]
 \end{equation*}
