@@ -1,6 +1,7 @@
 \documentclass[12pt]{article}
 \usepackage{setspace}
 \usepackage{amsmath}
+\usepackage{graphicx}
 \usepackage[margin=1.0in]{geometry}
 \usepackage[usenames,dvipsnames]{color}
 \usepackage{hyperref}
@@ -129,6 +130,19 @@ multiplier $m_{i\alpha}$ satisfies $1 \leq m_{i\alpha} \leq 86$ as described abo
   \mathrm{capitalCOMP}_i = \textrm{TotalCOMP}\cdot\left[\frac{\sum\limits_{\textrm{transactions }\alpha}{m_{i\alpha}C_{i\alpha}}}{\sum\limits_{\textrm{users }j}\left({\sum\limits_{\textrm{transactions }\alpha}{m_{j\alpha}C_{j\alpha}}}\right)}\right]
 \end{equation*}
 
+\subsection{``Top-up'' adjustment to \textrm{TotalCOMP}}
+
+Any nonzero value of the weight factor $w$ will produce a COMP distribution with a ``floor'',
+that is, a minimum number of COMP that every qualifying address will receive.
+To help align the distribution with the governance goals of the airdrop,
+we propose to include a ``top up'' quantity of COMP, distributed equally to all qualifying
+addresses, to raise this floor to an integer number. By setting the floor at an integer 
+number, any future proposals to support early user participation in govenance
+(e.g. decreasing the minimum COMP required to submit a CAP) will be easier for the
+community to understand and implement. This ``top-up'' adjustment effectively
+increases the amount of COMP to be distributed by some small inflationary factor,
+which this proposal aims to keep modest (below 10\%).
+
 \subsection{Selection of the social-vs-capital weight parameter $w$}
 
 Given community support for both capital-based and social-based weights,
@@ -158,5 +172,23 @@ as the single argument and compare the outputs.
 \\\\
 The distribution that appears to best meet the goal of empowering the
 early user community with a meaningful shot at a role in governance is
-95\% socially-weighted, 5\% capital-weighted. 
+95\% socially-weighted, 5\% capital-weighted:
+
+\begin{figure*}
+ \centering
+ \includegraphics[width=5in]{proposals/Proposal.png}
+\end{figure*}
+
+Merits of this choice of $w$ include:
+\begin{itemize}
+  \item{The largest amount distributed to any single address ($\approx$ 3000 COMP) is roughly two orders of magnitude greater than the floor amount (20 COMP).}
+  \item{More than 9 in 10 early users receive between 20 and 21 COMP, with fewer than 50 addresses receiving in excess of 100 COMP and only 2 addresses exceeding 1000 COMP.}
+\end{itemize}
+
+\section{References}
+\begin{enumerate}
+  \item{``Should Compound Retroactively Airdrop Tokens to Early Users?'' \href{https://www.comp.xyz/t/should-compound-retroactively-airdrop-tokens-to-early-users/595}{Compound Forum}.}
+  \item{\texttt{CompEarlyUserAnalysis} \href{https://github.com/0xA1176ec01045/CompEarlyUserAnalysis}{repository on GitHub}, where the implementation and results are hosted.}
+  \item{\href{https://raw.githubusercontent.com/0xA1176ec01045/CompEarlyUserAnalysis/main/proposals/Proposal.95-5.csv}{Proposed early user distribution of COMP by address}.}
+\end{enumerate}
 \end{document}
