@@ -67,12 +67,12 @@ cap_weights = { 'ZRX' : 0.506366856012202,
                'DAI' : 1.0
 }
 # ...compute contribution to capital*time multiplier by tx
-#    * Time multiplier 't' gives greater weight to earlier
+#    * TVL multiplier 'm' gives greater weight to earlier
 #      interactions with the protocol
-#    * Time multiplier grows linearly from 1 to tvl_factor=85,
+#    * TVL multiplier grows linearly from 1 to tvl_factor=85,
 #      which is the estimated multiple by which the protocol's
 #      TVL grew during the eligibility window
-# t = 1 + tvl_factor(earliest_interaction_block - EarlyUserCutoffBlock)/
+# m = 1 + tvl_factor(interaction_block - EarlyUserCutoffBlock)/
 #                   (CompV1deployBlock - EarlyUserCutoffBlock)
 #    * In case of multiple interactions by a single address,
 #      we use the earliest interaction to compute the multiplier
@@ -90,10 +90,9 @@ for index, row in addressData.iterrows():
         cap = 0.0
     interaction_block = row['block']
     tvl_factor = 85
-    t = 1.0 + tvl_factor*(interaction_block - EarlyUserCutoffBlock
+    m = 1.0 + tvl_factor*(interaction_block - EarlyUserCutoffBlock
             )/(CompV1deployBlock - EarlyUserCutoffBlock)
-    ct = cap*t
-    captime.append(ct)
+    captime.append(cap*m)
 addressData['x_captime'] = captime
 
 # ...sum contributions over txs to get final x_captime;
