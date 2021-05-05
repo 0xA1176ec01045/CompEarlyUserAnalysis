@@ -51,7 +51,10 @@ addressData = pd.concat(nondustDataByToken)
 #print(addressData)
 
 CompV1deployBlock      = 6400278
-EarlyUserCutoffBlock   = 10228172
+# If we use 1 week before COMP distribution (June 8, 2020):
+#EarlyUserCutoffBlock   = 10228172
+# If we use the date of the COMP token announcement (Feb 20, 2020):
+EarlyUserCutoffBlock = 9516777
 
 # ...sort address data by address and then by block
 addressData = addressData.sort_values(['address','block'])
@@ -83,15 +86,19 @@ cap_weights = { 'ZRX' : 0.506366856012202,
 #      price in USD at CompV1deployBlock and at COMPlaunchBlock
 #    * See SimpleCapitalWeights.py for implementation details
 captime = []
+tvl_factor = 85
 for index, row in addressData.iterrows():
     if row['action'] == 'supply' or row['action'] == 'borrow':
         cap = row['amount']*cap_weights[row['token']]
     else:
         cap = 0.0
     interaction_block = row['block']
-    tvl_factor = 85
-    m = 1.0 + tvl_factor*(interaction_block - EarlyUserCutoffBlock
-            )/(CompV1deployBlock - EarlyUserCutoffBlock)
+    # Interaction only qualifies if interaction_block <= EarlyUserCutoffBlock
+    if interaction_block > EarlyUserCutoffBlock:
+        m = 0
+    else:
+        m = 1.0 + tvl_factor*(interaction_block - EarlyUserCutoffBlock
+                )/(CompV1deployBlock - EarlyUserCutoffBlock)
     captime.append(cap*m)
 addressData['x_captime'] = captime
 
