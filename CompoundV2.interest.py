@@ -98,7 +98,7 @@ def getClosestAvailableBlock(targetBlock,historicalData):
     return int(closestBlock)
     
 # Get a web3 object pulling data from Infura Ethereum Mainnet RPC
-w3 = web3.Web3(web3.Web3.HTTPProvider('https://dry-empty-sunset.quiknode.io/36e947d3-a37c-4480-a42a-8a879acbcf51/Lr6bbYqSl6kFkTRn5TG_OY3KOs13qPq0H-pKUtjqiu2XP-YOeyTdTKhb5Z56dQgFQb49acVpR5olMxSuLVznmg==/'))
+w3 = web3.Web3(web3.Web3.HTTPProvider('YOUR-NODE-HERE'))
 
 CompV1deployBlock      = 6400278
 # If we use 1 week before COMP distribution (June 8, 2020):
