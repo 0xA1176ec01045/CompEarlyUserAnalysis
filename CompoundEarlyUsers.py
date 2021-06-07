@@ -1,7 +1,7 @@
 import web3
 import json
 
-batchSize = 100000      # size of each batch of blocks;
+batchSize = 100         # size of each batch of blocks;
                         # we use this to sidestep limit on
                         # number of events returned by getLogs()
 
@@ -224,7 +224,8 @@ for cToken in cTokens:
                     address = str(event['args']['borrower'])
                     amount = str(round(event["args"]["borrowAmount"]/base,6))
                 elif action == 'repay':
-                    address = str(event['args']['payer'])
+                    # 
+                    address = str(event['args']['borrower'])
                     amount = str(round(event["args"]["repayAmount"]/base,6))
                 elif action == 'liquidate':
                     address = str(event['args']['liquidator'])
