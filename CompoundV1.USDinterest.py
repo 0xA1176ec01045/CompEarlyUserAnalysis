@@ -163,7 +163,7 @@ for index, row in txData.iterrows():
                             tokenBorrowInterest] += interest 
         print("Accrued borrow (repay) interest " + str(interest) + " to " + str(row['address']))
 
-# Finally, we need to handle interest associated with any
+# Finally, we need to reconcile interest associated with any
 # outstanding balances at the end of the qualifying period;
 # This is a bit harder because we don't have contract events to work with
 
@@ -186,7 +186,10 @@ for index,row in accruedInterest.iterrows():
         thisTokenTxData = thisAddressTxData[thisAddressTxData['token']==token]
         if thisTokenTxData.empty:
             continue
-        #print(thisTokenTxData)
+        # Below, we inspect the tx closest to the EarlyUserCutoffBlock,
+        # while within the early user window, for this (address,token) pair.
+        # If this tx is a liquidation (no newBalance), move back to the
+        # next-most-recent tx until we find a non-liquidation event
         txCount = 0
         foundSupplyWithdraw = False
         foundBorrowRepay    = False
@@ -198,10 +201,8 @@ for index,row in accruedInterest.iterrows():
             if len(thisTokenTxData.tail(txCount)['newBalance'].values) >= txCount:
                 break
             try:
-                lastNewBalance = int(thisTokenTxData.tail(txCount)['newBalance'].values[0])     ## Instead of values[0] and looping bkwds,
-                #print("lastNewBalance = ", lastNewBalance)                                      ## can we grab all values and find last
-            except:                                                                             ## supply/withdraw and borrow/repay directly?
-                #print(thisTokenTxData.tail(txCount)['newBalance'].values[0])
+                lastNewBalance = int(thisTokenTxData.tail(txCount)['newBalance'].values[0]) 
+            except:                                                                         
                 foundSupplyWithdraw = True
                 foundBorrowRepay = True
             if lastNewBalance != 0:
@@ -217,8 +218,8 @@ for index,row in accruedInterest.iterrows():
                     continue
                 elif thisAction == 'supply' or 'withdraw':
                     FoundSupplyWithdraw = True
-                # Using the current V1 rate; I don't see a way to
-                # extract the rate at a specific block in the past
+                # Using the current V1 rate (approximation); 
+                # no easy way to extract the rate at a specific block in the past
                     supplyData = MoneyMarket.functions.markets(thisToken['address']).call()
                     # supplyIndex, Mantissa are 5th, 4th index returned by V1 markets()
                     supplyIndex = float(supplyData[5])
@@ -227,7 +228,7 @@ for index,row in accruedInterest.iterrows():
                     newBalance = lastNewBalance*(newInterestIndex/supplyIndex)
                     interest = newBalance - lastNewBalance
                     interest = interest*convertToUSD
-                    #print('reconciling ' + str(interest) + ' ' + thisToken['label'] + ' to ' + row['address'])
+                    print('reconciling ' + str(interest) + ' ' + thisToken['label'] + ' to ' + row['address'])
                     print(row['address'] + " has " + str(newBalance*10**(-thisToken['decimals'])) + " " + thisToken['label'] + " with residual supply interest of " + str(interest*10**(-thisToken['decimals'])) + " " + thisToken['label'])
                     accruedInterest.loc[accruedInterest['address'] == address,
                                         tokenSupplyInterest] += interest 
