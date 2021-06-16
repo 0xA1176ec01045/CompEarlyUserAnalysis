@@ -5,6 +5,7 @@ import requests
 from datetime import date, timedelta
 from sys import argv
 
+#earlyUserFile = 'CompoundV1.EarlyUserEvents.csv'
 earlyUserFile = 'CompoundV1.EarlyUserEvents.csv'
 outfile = 'CompoundV1.EarlyUserUSDInterest.csv'
 
@@ -65,9 +66,9 @@ CoinGeckoLabel = {'ZRX' : '0x',
                  }
 
 # Get a web3 object pulling data from Infura Ethereum Mainnet RPC
-w3 = web3.Web3(web3.Web3.HTTPProvider('YOUR-NODE-HERE'))
+w3 = web3.Web3(web3.Web3.HTTPProvider('YOUR-RPC-HERE'))
 
-with open(CompV1["abi"]) as json_file:
+with open('abis/'+CompV1["abi"]) as json_file:
     CompoundV1ABI = json.load(json_file)
     MoneyMarketABI = CompoundV1ABI["MoneyMarket"]
 
@@ -190,7 +191,7 @@ for index,row in accruedInterest.iterrows():
         foundSupplyWithdraw = False
         foundBorrowRepay    = False
         while foundSupplyWithdraw == False or foundBorrowRepay == False:
-            #print("Still looking for a latest supply or latest withdraw...")
+            #print("Still looking for a latest supply or latest borrow...")
             txCount += 1
             if thisTokenTxData.empty:
                 break
@@ -254,4 +255,4 @@ for index,row in accruedInterest.iterrows():
                     foundSupplyWithdraw = True
                 elif thisAction == 'borrow' or 'repay':
                     foundBorrowRepay = True
-accruedInterest.to_csv(outfile)
+accruedInterest.to_csv(outfile,index=False)

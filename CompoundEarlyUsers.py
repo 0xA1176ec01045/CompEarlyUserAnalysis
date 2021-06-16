@@ -1,12 +1,15 @@
 import web3
 import json
+from time import sleep
 
-batchSize = 100         # size of each batch of blocks;
-                        # we use this to sidestep limit on
-                        # number of events returned by getLogs()
+batchSize = 100       # size of each batch of blocks;
+                      # we use this to sidestep potential limits
+                      # on number of events returned by getLogs()
 
-CompoundV1Outfile = 'CompoundV1.EarlyUsers.csv'
-CompoundV2Outfile = 'CompoundV2.EarlyUsers.csv'
+CompoundV1Outfile = 'CompoundV1.EarlyUserEvents.csv'
+CompoundV2Outfile = 'CompoundV2.EarlyUserEvents.csv'
+CompoundV1LiqOutfile = 'CompoundV1.EarlyUserEvents.liq.csv'
+CompoundV2LiqOutfile = 'CompoundV2.EarlyUserEvents.liq.csv'
 
 # Compound V1 contract metadata
 CompV1 = {
@@ -42,7 +45,7 @@ SAI = {
 V1Tokens = [ZRX,BAT,REP,WETH,SAI]
 
 # cToken contract metadata
-# Only includes contracts deployed before block 9601359 (release of COMP)
+# Only includes contracts deployed before release of COMP
 cZRX = {
   "address"     : '0xB3319f5D18Bc0D84dD1b4825Dcde5d5f7266d407',
   "deployBlock" : 7710735,
@@ -105,100 +108,124 @@ ETH = {
 actions = ["supply","withdraw","borrow","repay","liquidate"]
 
 # No need to review blocks prior to first cToken deployment (cZRX);
-# No need to review blocks after one week prior to COMP launch:
-# Last block produced on June 8, 2020 is 10228172
+# No need to review blocks after  COMP launch:
+# Last block produced on June 15, 2020 is 10273464
 # --> Note that deployment of COMP token contract preceeds
 #     official launch of COMP rewards by several months
 CompV1deployBlock      = CompV1["deployBlock"]
 cZRXdeployBlock        = cZRX["deployBlock"]
 COMPdeployBlock        = 9601359
-EarlyUserCutoffBlock   = 10228172
+EarlyUserCutoffBlock   = 9516777
 
 # Get a web3 object pulling data from Infura Ethereum Mainnet RPC
 # --> User must provide a valid Infura Project ID or replace with a local ethereum IPC 
-w3 = web3.Web3(web3.Web3.HTTPProvider('https://mainnet.infura.io/v3/YOUR-PROJECT-ID'))
+w3 = web3.Web3(web3.Web3.HTTPProvider('YOUR-RPC-HERE'))
 
 # Gather Compound V1 Early User Interactions
 # Open ABI and gather events for the V1 contract
-with open(CompV1["abi"]) as json_file:
+with open('abis/'+CompV1["abi"]) as json_file:
     CompoundV1ABI = json.load(json_file)
     MoneyMarketABI = CompoundV1ABI["MoneyMarket"]
 outfile = open(CompoundV1Outfile,'w')
+outfile.write("block,txhash,address,action,token,decimals,amount,startingBalance,newBalance")
+liqOutfile = open(CompoundV1LiqOutfile,'w')
+liqOutfile.write("block,txhash,address,action,token,decimals,amount,startingBalance,newBalance")
 
 CompV1["contract"] = w3.eth.contract(CompV1["address"],abi=MoneyMarketABI)
+print("Opening V1 contract...")
 for batch in range(CompV1deployBlock,EarlyUserCutoffBlock,batchSize):
     startBlock = batch
     endBlock = batch+batchSize-1
+    print("Collecting logs for batch from " + str(startBlock) + " to " + str(endBlock))
     if endBlock > EarlyUserCutoffBlock:
         endBlock = EarlyUserCutoffBlock
+    print("...pulling supplies")
     CompV1["supply"]    = CompV1["contract"].events.SupplyReceived.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
+    print("...pulling withdrawals")
     CompV1["withdraw"]  = CompV1["contract"].events.SupplyWithdrawn.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
+    print("...pulling borrows")
     CompV1["borrow"]    = CompV1["contract"].events.BorrowTaken.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
+    print("...pulling repays")
     CompV1["repay"]     = CompV1["contract"].events.BorrowRepaid.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
+    print("...pulling liquidations")
     CompV1["liquidate"] = CompV1["contract"].events.BorrowLiquidated.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
     for action in actions:
         # Liquidations have different event structure than
         # other actions, so we need to handle them differently.
-        # Here we track the liquidator but not the borrower,
-        # as the borrower's action will be counted later.
         if action == "liquidate":
             for event in CompV1[action]:
                 block = str(event['blockNumber'])
                 txhash = str(event['transactionHash'].hex())
-                address = str(event['args']['liquidator'])
+                liquidator = str(event['args']['liquidator'])
                 asset = str(event['args']['assetBorrow'])
                 thisToken = 'UNK' # default label if token label not found
                 for token in V1Tokens:
                     if asset == token["address"]:
                         thisToken = token["label"]
+                        decimals = str(token["decimals"])
                         base = pow(10.,token["decimals"])
-                amount = str(round(event['args']['amountRepaid']/base,6))
-                data = [block, txhash, address, action, amount, thisToken]
-                outfile.write(','.join(data[i] for i in range(6))+'\n')
+                amount = str(event['args']['amountRepaid'])
+                borrower = str(event['args']['targetAccount'])
+                data = [block,txhash,liquidator,action,thisToken,decimals,amount,borrower]
+                liqOutfile.write(','.join(data[i] for i in range(len(data)))+'\n')
         else:
             for event in CompV1[action]:
                 block = str(event['blockNumber'])
                 txhash = str(event['transactionHash'].hex())
                 address = str(event['args']['account'])
                 asset = str(event['args']['asset'])
+                startingBalance = str(event['args']['startingBalance'])
+                newBalance = str(event['args']['newBalance'])
+                amount = str(event['args']['amount'])
+                # The correct amount for borrows only is "borrowAmountWithFee"
+                if action == "borrow":
+                    amount = str(event['args']['borrowAmountWithFee'])
                 thisToken = 'UNK' # default label if token label not found
                 for token in V1Tokens:
                     if asset == token["address"]:
                         thisToken = token["label"]
-                        base = pow(10.,token["decimals"])
-                amount = str(round(event['args']['amount']/base,6))
-                data = [block, txhash, address, action, amount, thisToken]
-                outfile.write(','.join(data[i] for i in range(6))+'\n')
+                        decimals = str(token["decimals"])
+                #amount = str(round(event['args']['amount']/base,6))
+                data = [block,txhash,address,action,thisToken,decimals,amount,startingBalance,newBalance]
+                outfile.write(','.join(data[i] for i in range(len(data)))+'\n')
+    if endBlock > EarlyUserCutoffBlock:
+        break
 outfile.close()
+liqOutfile.close()
 
 # Gather Compound V2 Early User Interactions
 outfile = open(CompoundV2Outfile,'w')
+liqOutfile = open(CompoundV2LiqOutfile,'w')
+outfile.write("block,txhash,address,action,token,decimals,amount,state\n")
+liqOutfile.write("block,txhash,liquidator,action,token,decimals,amount,seizeTokens,borrower\n")
 # Open ABI and gather events for each V2 cToken contract
 for cToken in cTokens:
     token = str(cToken["abi"].split('.')[0])
     underlying = token[1:]
-    with open(cToken["abi"]) as json_file:
+    with open('abis/'+cToken["abi"]) as json_file:
         cTokenABI = json.load(json_file)
     cToken["contract"] = w3.eth.contract(cToken["address"],abi=cTokenABI)
+    print("Opening " + token + " V2 contract...")
     for batch in range(cZRXdeployBlock,EarlyUserCutoffBlock,batchSize):
         startBlock = batch
         endBlock = batch+batchSize-1
+        print("  Collecting logs for batch from " + str(startBlock) + " to " + str(endBlock))
         if endBlock > EarlyUserCutoffBlock:
             endBlock = EarlyUserCutoffBlock
-        cToken["supply"]    = cToken["contract"].events.Mint.getLogs(
+        cToken['supply']    = cToken['contract'].events.Mint.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
-        cToken["withdraw"]  = cToken["contract"].events.Redeem.getLogs(
+        cToken['withdraw']  = cToken['contract'].events.Redeem.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
-        cToken["borrow"]    = cToken["contract"].events.Borrow.getLogs(
+        cToken['borrow']    = cToken['contract'].events.Borrow.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
-        cToken["repay"]     = cToken["contract"].events.RepayBorrow.getLogs(
+        cToken['repay']     = cToken['contract'].events.RepayBorrow.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
-        cToken["liquidate"] = cToken["contract"].events.LiquidateBorrow.getLogs(
+        cToken['liquidate'] = cToken['contract'].events.LiquidateBorrow.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
         for action in actions:
             for event in cToken[action]:
@@ -214,24 +241,39 @@ for cToken in cTokens:
                 else:
                     decimals = 18
                 base = pow(10.,decimals)
+                decimals = str(decimals)
                 if action == 'supply':
                     address = str(event['args']['minter'])
-                    amount = str(round(event["args"]["mintAmount"]/base,6))
+                    amount = str(event['args']['mintAmount'])
+                    state = str(event['args']['mintTokens'])
+                    data = [block,txhash,address,action,thisToken,decimals,amount,state]
+                    outfile.write(','.join(data[i] for i in range(len(data)))+'\n')
                 elif action == 'withdraw':
                     address = str(event['args']['redeemer'])
-                    amount = str(round(event["args"]["redeemAmount"]/base,6))
+                    amount = str(event['args']['redeemAmount'])
+                    state = str(event['args']['redeemTokens'])
+                    data = [block,txhash,address,action,thisToken,decimals,amount,state]
+                    outfile.write(','.join(data[i] for i in range(len(data)))+'\n')
                 elif action == 'borrow':
                     address = str(event['args']['borrower'])
-                    amount = str(round(event["args"]["borrowAmount"]/base,6))
+                    amount = str(event['args']['borrowAmount'])
+                    state = str(event['args']['accountBorrows'])
+                    data = [block,txhash,address,action,thisToken,decimals,amount,state]
+                    outfile.write(','.join(data[i] for i in range(len(data)))+'\n')
                 elif action == 'repay':
-                    # 
                     address = str(event['args']['borrower'])
-                    amount = str(round(event["args"]["repayAmount"]/base,6))
+                    amount = str(event['args']['repayAmount'])
+                    state = str(event['args']['accountBorrows'])
+                    data = [block,txhash,address,action,thisToken,decimals,amount,state]
+                    outfile.write(','.join(data[i] for i in range(len(data)))+'\n')
                 elif action == 'liquidate':
-                    address = str(event['args']['liquidator'])
-                    amount = str(round(event["args"]["repayAmount"]/base,6))
-                data = [block, txhash, address, action, amount, thisToken]
-                outfile.write(','.join(data[i] for i in range(6))+'\n')
+                    liquidator = str(event['args']['liquidator'])
+                    borrower = str(event['args']['borrower'])
+                    amount = str(event['args']['repayAmount'])
+                    seizeTokens = str(event['args']['seizeTokens'])
+                    data = [block,txhash,liquidator,action,thisToken,decimals,amount,seizeTokens,borrower]
+                    liqOutfile.write(','.join(data[i] for i in range(len(data)))+'\n')
+        if endBlock > EarlyUserCutoffBlock:
+            break
 outfile.close()
-
-
+liqOutfile.close()
