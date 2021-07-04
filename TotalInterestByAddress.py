@@ -2,7 +2,7 @@ import pandas as pd
 from sys import argv
 
 # Produce a list of addresses and proposed COMP distributions
-pctSocial  = int(argv[1])
+pctSocial  = 0 # Change this variable to distribute a percentage of COMP equally across all early users
 pctCapital = 100-pctSocial
 interestFile = 'TotalUSDInterestByAddress.csv'
 propFile = 'NewProposal.'+str(pctSocial)+'-'+str(pctCapital)+'.csv'
@@ -79,11 +79,6 @@ interestData[['address','Total']].round(decimals=2).sort_values(['Total']).to_cs
 # --> Based on forum discussion of 5% distribution to early users
 # --> 5% of 10M tokens = 500000 COMP to be distributed
 # --> pctSocial of distribution is socialized, pctCapital is capital-time weighted
-# --> Proposed formula for distribution to user i 
-#     COMP_i = pctSocial*socialCOMP_i + pctCapital*capitalWeightedCOMP_i
-#     : socialCOMP_i = (Total)/(number of eligible addresses)
-#     : capitalWeightedCOMP_i = (Total)*(x_captime_i)/
-#                               (sum over eligible users of (x_captime))
 TotalCOMPdistribution = 5.e5
 num_addresses = interestData.shape[0]
 

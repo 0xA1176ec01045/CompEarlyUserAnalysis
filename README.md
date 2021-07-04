@@ -29,7 +29,7 @@ or, run the steps separately:
 
 * Run `python CompoundEarlyUsers.py` to (re)produce the lists `CompoundV1.EarlyUserEvents.csv` and `CompoundV2.EarlyUserEvents.csv`. These lists comprise a history of all interactions with V1 and V2 of the protocol, respectively. Unfortunately for this analysis (but probably fortunately for us as consumers of gas on ethereum!), accrued interest is not directly recorded in the contract events emitted during these transactions; however, they provide sufficient information to compute accrued interest as follows.
 * Run `python CompoundV1.USDinterest.py` and `python CompoundV2.USDinterest.py` to (re)produce the lists `CompoundV1.EarlyUserUSDInterest.csv` and `CompoundV2.EarlyUserUSDInterest.csv`. These scripts produce a tally of USD-denominated interest accrued for each asset on each version of the protocol during the early user period.
-* Run `python MakeSimpleProposal.py a b` to produce a list of early-user addresses and the amount of COMP they would receive if, of an initial 500,000 COMP total apportioned to early users, `a`% is distributed equally across all addresses and `100-a`% is distributed according to interest accrued during the early user period (`b` is not actually used by the script). Note that the conversion of accrued interest to USD is performed at the time interest was accrued; as asset prices fluctuate, it is expected that total USD-denominated interest will not match the present-day USD value of accrued interest as denominated in the original assets. The approach used here is consistent with the spirit of using total supply and borrow interest accrued over time as a proxy for capital at risk over time in the protocol.
+* Run `python TotalInterestByAddress.py` to produce a list of early-user addresses and the estimated total USD value of all supply and borrow interest accrued by that address during the early user window. Note that the conversion of accrued interest to USD is performed at the time interest was accrued; as asset prices fluctuate, it is expected that total USD-denominated interest will not match the present-day USD value of accrued interest as denominated in the original assets. The approach used here is consistent with the spirit of using total supply and borrow interest accrued over time as a proxy for capital at risk over time in the protocol.
 
 ## Absence of a suggested distribution model
 
@@ -38,6 +38,8 @@ The `CompEarlyUserAnalysis` tool is now focused squarely on providing *data* for
 ## Structure of the obsolete `version_1` distribution model
 
 Strictly for historical reference, a high-level overview of how the now-obsolete `version_1` of this tool computed a proposed COMP distribution by early-user address is provided in the file [summary.pdf](https://github.com/0xA1176ec01045/CompEarlyUserAnalysis/blob/main/version_1/proposals/summary.pdf).
+
+The lists in the `version_2` folder are from a time when the USD interest rate calculations were implemented for interactions with the protocol but not for cToken transfers. These data should be considered incomplete/inaccurate; they are posted here strictly for historical reference.
 
 ## Acknowledgments / About This Project
 The development of this tool and analysis is generously sponsored by a grant from the [Compound Grants program](https://compoundgrants.org) to an early Compound user. Constructive criticism, suggestions, and pull requests are all welcome!
