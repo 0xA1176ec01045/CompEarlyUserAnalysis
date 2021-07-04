@@ -1,0 +1,11 @@
+This folder contains csv output from the version of these scripts
+reported to the Compound forum on June 17, 2021.
+
+Early user feedback helped me identify an issue with tracking of
+cToken transfers in the accrued interest calculations.
+
+These results are therefore inaccurate for users who sent or
+received cTokens, including transfers associated with a liquidation
+or interactions with certain contracts (e.g. smart wallets).
+These lists should be considered inaccurate and are kept here
+strictly for historical reference if needed.

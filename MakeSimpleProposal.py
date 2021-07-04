@@ -18,8 +18,6 @@ interestData = interestData.groupby(['address'],as_index=False).sum()
 
 # Compute total interest and write to csv (rounded to nearest 0.01 USD)
 interestData['Total'] = interestData.sum(axis='columns')
-#interestData['TotalRounded'] = round(interestData['Total'],2)
-#interestData[['address','TotalRounded']].sort_values(['TotalRounded']).to_csv(interestFile,index=False)
 interestData[['address','Total']].round(decimals=2).sort_values(['Total']).to_csv(interestFile,index=False)
 
 # Express users' interest as a fraction of total early user interest mediated by the protocol
@@ -32,10 +30,12 @@ allocatedCOMPpct = 5
 allocatedCOMP = allocatedCOMPpct*(totalCOMPsupply/100.)
 interestData['x_interest'] = interestData['Fractional']*allocatedCOMP
 
-# Exclude Compound Deployer address:
+# Exclude Compound Deployer and burn addresses:
 # 0xA7ff0d561cd15eD525e31bbe0aF3fE34ac2059F6 Compound Deployer
 CompDeployer = '0xA7ff0d561cd15eD525e31bbe0aF3fE34ac2059F6' 
+BurnAddress  = '0x0000000000000000000000000000000000000000' 
 interestData = interestData[interestData['address'] != CompDeployer]
+interestData = interestData[interestData['address'] != BurnAddress]
 #
 # Exclude addresses that funded or received funds from Sybil attack addresses:
 SybilFunder1   = '0xB67e217f9B39427bf2d6B3DC1aA9C03b24EAb95A'
@@ -72,6 +72,8 @@ interestData = interestData[interestData['address'] != SybilReceiver9]
 interestData = interestData[interestData['address'] != SybilReceiver10]
 interestData = interestData[interestData['address'] != SybilReceiver11]
 interestData = interestData[interestData['address'] != SybilReceiver12]
+
+interestData[['address','Total']].round(decimals=2).sort_values(['Total']).to_csv(interestFile,index=False)
 
 # Translate multipliers into proposed COMP distribution
 # --> Based on forum discussion of 5% distribution to early users

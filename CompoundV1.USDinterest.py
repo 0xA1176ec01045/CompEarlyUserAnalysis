@@ -5,7 +5,6 @@ import requests
 from datetime import date, timedelta
 from sys import argv
 
-#earlyUserFile = 'CompoundV1.EarlyUserEvents.csv'
 earlyUserFile = 'CompoundV1.EarlyUserEvents.csv'
 outfile = 'CompoundV1.EarlyUserUSDInterest.csv'
 

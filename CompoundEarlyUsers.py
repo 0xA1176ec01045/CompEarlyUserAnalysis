@@ -10,6 +10,7 @@ CompoundV1Outfile = 'CompoundV1.EarlyUserEvents.csv'
 CompoundV2Outfile = 'CompoundV2.EarlyUserEvents.csv'
 CompoundV1LiqOutfile = 'CompoundV1.EarlyUserEvents.liq.csv'
 CompoundV2LiqOutfile = 'CompoundV2.EarlyUserEvents.liq.csv'
+CompoundV2TransferOutfile = 'CompoundV2.EarlyUserTransfers.csv'
 
 # Compound V1 contract metadata
 CompV1 = {
@@ -108,18 +109,21 @@ ETH = {
 actions = ["supply","withdraw","borrow","repay","liquidate"]
 
 # No need to review blocks prior to first cToken deployment (cZRX);
-# No need to review blocks after  COMP launch:
+# No need to review blocks after COMP launch June 16, 2020.
 # Last block produced on June 15, 2020 is 10273464
-# --> Note that deployment of COMP token contract preceeds
-#     official launch of COMP rewards by several months
+
+# Early users are defined here as those who tested the protocol
+# by interacting with it on mainnet before the COMP token and
+# distribution were announced on Feb 26, 2020;
+#     EarlyUserCutoffBlock is first block Feb 26, 2020 UTC
 CompV1deployBlock      = CompV1["deployBlock"]
 cZRXdeployBlock        = cZRX["deployBlock"]
 COMPdeployBlock        = 9601359
-EarlyUserCutoffBlock   = 9516777
+EarlyUserCutoffBlock   = 9555731
 
 # Get a web3 object pulling data from Infura Ethereum Mainnet RPC
 # --> User must provide a valid Infura Project ID or replace with a local ethereum IPC 
-w3 = web3.Web3(web3.Web3.HTTPProvider('YOUR-RPC-HERE'))
+w3 = web3.Web3(web3.Web3.HTTPProvider('https://dry-empty-sunset.quiknode.io/36e947d3-a37c-4480-a42a-8a879acbcf51/Lr6bbYqSl6kFkTRn5TG_OY3KOs13qPq0H-pKUtjqiu2XP-YOeyTdTKhb5Z56dQgFQb49acVpR5olMxSuLVznmg==/'))
 
 # Gather Compound V1 Early User Interactions
 # Open ABI and gather events for the V1 contract
@@ -156,7 +160,7 @@ for batch in range(CompV1deployBlock,EarlyUserCutoffBlock,batchSize):
                                fromBlock=startBlock,toBlock=endBlock)
     for action in actions:
         # Liquidations have different event structure than
-        # other actions, so we need to handle them differently.
+        # other actions, so we need to handle them differently:
         if action == "liquidate":
             for event in CompV1[action]:
                 block = str(event['blockNumber'])
@@ -190,7 +194,6 @@ for batch in range(CompV1deployBlock,EarlyUserCutoffBlock,batchSize):
                     if asset == token["address"]:
                         thisToken = token["label"]
                         decimals = str(token["decimals"])
-                #amount = str(round(event['args']['amount']/base,6))
                 data = [block,txhash,address,action,thisToken,decimals,amount,startingBalance,newBalance]
                 outfile.write(','.join(data[i] for i in range(len(data)))+'\n')
     if endBlock > EarlyUserCutoffBlock:
@@ -199,10 +202,14 @@ outfile.close()
 liqOutfile.close()
 
 # Gather Compound V2 Early User Interactions
+actions = ["supply","withdraw","borrow","repay","liquidate","transfer"]
 outfile = open(CompoundV2Outfile,'w')
 liqOutfile = open(CompoundV2LiqOutfile,'w')
+transferOutfile = open(CompoundV2TransferOutfile,'w')
 outfile.write("block,txhash,address,action,token,decimals,amount,state\n")
 liqOutfile.write("block,txhash,liquidator,action,token,decimals,amount,seizeTokens,borrower\n")
+transferOutfile.write("block,txhash,sender,action,token,decimals,amount,receiver\n")
+lastAction = 'None'
 # Open ABI and gather events for each V2 cToken contract
 for cToken in cTokens:
     token = str(cToken["abi"].split('.')[0])
@@ -211,6 +218,7 @@ for cToken in cTokens:
         cTokenABI = json.load(json_file)
     cToken["contract"] = w3.eth.contract(cToken["address"],abi=cTokenABI)
     print("Opening " + token + " V2 contract...")
+    txhashList = []
     for batch in range(cZRXdeployBlock,EarlyUserCutoffBlock,batchSize):
         startBlock = batch
         endBlock = batch+batchSize-1
@@ -226,6 +234,8 @@ for cToken in cTokens:
         cToken['repay']     = cToken['contract'].events.RepayBorrow.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
         cToken['liquidate'] = cToken['contract'].events.LiquidateBorrow.getLogs(
+                               fromBlock=startBlock,toBlock=endBlock)
+        cToken['transfer']  = cToken['contract'].events.Transfer.getLogs(
                                fromBlock=startBlock,toBlock=endBlock)
         for action in actions:
             for event in cToken[action]:
@@ -273,7 +283,21 @@ for cToken in cTokens:
                     seizeTokens = str(event['args']['seizeTokens'])
                     data = [block,txhash,liquidator,action,thisToken,decimals,amount,seizeTokens,borrower]
                     liqOutfile.write(','.join(data[i] for i in range(len(data)))+'\n')
+                elif action == 'transfer':
+                    # Only record transfers if the transfer was *not* issued as part of another event;
+                    # most other actions are accompanied by a transfer to/from the user
+                    # that's already (implicitly) accounted for by the other event handlers
+                    if txhash not in txhashList or lastAction == 'transfer': 
+                        sender = str(event['args']['from'])  
+                        receiver = str(event['args']['to'])
+                        amount = str(event['args']['amount'])
+                        data = [block,txhash,sender,action,thisToken,decimals,amount,receiver]
+                        transferOutfile.write(','.join(data[i] for i in range(len(data)))+'\n')
+                        
+                txhashList.append(txhash)
+                lastAction = action
         if endBlock > EarlyUserCutoffBlock:
             break
 outfile.close()
 liqOutfile.close()
+transferOutfile.close()
